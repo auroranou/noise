@@ -1,0 +1,10 @@
+{
+  "name": "noise-viz",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Diane Cai <dianecai@gmail.com>, Aurora Nou <auroranou@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.93.0"
+  }
+}
