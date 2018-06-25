@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', init);
 
 function init() {
+  const startTime = Date.now();
+
   const container = document.getElementById('container');
   if (!container) return;
 
@@ -11,8 +13,12 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   container.appendChild(renderer.domElement);
 
-  var geometry = new THREE.BoxGeometry(1, 1, 1);
+  var geometry = new THREE.BoxGeometry(5, 5, 5);
+  var uniforms = {
+    uTime: { type: 'f', value: 1.0 }
+  };
   var material = new THREE.ShaderMaterial({
+    uniforms: uniforms,
     vertexShader: document.getElementById('vertex-shader').textContent,
     fragmentShader: document.getElementById('fragment-shader').textContent
   });
@@ -26,6 +32,11 @@ function init() {
 
     // cube.rotation.x += 0.1;
     // cube.rotation.y += 0.1;
+
+    var elapsedMs = Date.now() - startTime;
+    var elapsedSeconds = elapsedMs / 1000.0;
+    // uniforms.uTime.value = 60.0 * elapsedSeconds;
+    uniforms.uTime.value = 12.0;
 
     renderer.render(scene, camera);
   };
