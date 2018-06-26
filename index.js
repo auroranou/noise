@@ -1,21 +1,43 @@
 document.addEventListener('DOMContentLoaded', init);
 
+
+class Audio {
+  constructor() {
+    this.context = new AudioContext();
+    this.filter = null;
+    this.microphone = null;
+    this.analyser = null;
+    this.source = null;
+    // var self = this
+    navigator.mediaDevices.getUserMedia({audio: true})
+      .then((stream) => {
+        this.microphone = this.context.createMediaStreamSource(stream);
+        this.filter = this.context.createBiquadFilter();
+
+        this.analyser = this.context.createAnalyser();
+        this.analyser.smoothingTimeConstant = 0.5;
+        this.analyser.fftSize = 512;
+        this.microphone.connect(this.analyser);
+        this.filter.connect(this.analyser);
+        this.analyser.connect(this.context.destination);
+        
+        this.source = this.context.createBufferSource();
+        this.source.connect(this.analyser);
+
+        this.microphone.connect(this.filter);
+        this.filter.connect(this.context.destination);      
+      })
+      .catch(function(err) { console.log(`there's an error ${err}`) });
+  }
+}
+
+
 function init() {
   window.AudioContext = window.AudioContext || window.webkitAudioContext;
 
-  var context = new AudioContext();
+  let audio = new Audio();
 
-  navigator.mediaDevices.getUserMedia({audio: true}, function(stream) {
-    var microphone = context.createMediaStreamSource(stream);
-    var filter = context.createBiquadFilter();
-  
-    // microphone -> filter -> destination.
-    microphone.connect(filter);
-    filter.connect(context.destination);
-    console.log(stream);
-  }, function(err) { console.log(`there's an error ${err}`) } );
-
-
+  // debugger
   const startTime = Date.now();
 
   const container = document.getElementById('container');
@@ -23,13 +45,6 @@ function init() {
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-  const listener = new THREE.AudioListener();
-  camera.add(listener);
-
-  const sound = new THREE.Audio(listener);
-
-  const audioLoader = new THREE.AudioLoader();
 
 
   const renderer = new THREE.WebGLRenderer();
@@ -56,7 +71,7 @@ function init() {
 
     // cube.rotation.x += 0.1;
     // cube.rotation.y += 0.1;
-
+    process(audio);
     var elapsedMs = Date.now() - startTime;
     var elapsedSeconds = elapsedMs / 1000.0;
     // uniforms.uTime.value = 60.0 * elapsedSeconds;
@@ -64,6 +79,19 @@ function init() {
 
     renderer.render(scene, camera);
   };
+
+  function process(audio){
+    if (!audio.analyser) {
+      // audio.microphone.disconnect(0);
+      //Need to set the analyser to null to stop the animation.
+      // audio.analyser = null;
+      // Might need to disconnect the other analysers.
+      return;
+    } 
+
+    var bufferLength = audio.analyser.frequencyBinCount;
+    var dataArr = new Uint8Array(bufferLength);
+  }
 
   animate();
 }
