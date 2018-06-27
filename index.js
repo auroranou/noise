@@ -11,8 +11,8 @@ class Audio {
     this.bufferLength = null;
     this.dataArr = new Uint8Array();
     this.fftSize = 512;
-    
-    navigator.mediaDevices.getUserMedia({audio: true})
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
       .then((stream) => {
         this.microphone = this.context.createMediaStreamSource(stream);
         this.filter = this.context.createBiquadFilter();
@@ -23,17 +23,17 @@ class Audio {
         this.microphone.connect(this.analyser);
         this.filter.connect(this.analyser);
         this.analyser.connect(this.context.destination);
-        
+
         this.source = this.context.createBufferSource();
         this.source.connect(this.analyser);
 
         this.microphone.connect(this.filter);
         this.filter.connect(this.context.destination);
-        
+
         this.bufferLength = this.analyser.frequencyBinCount;
         this.dataArr = new Uint8Array(this.bufferLength);
       })
-      .catch(function(err) { console.log(`there's an error ${err}`) });
+      .catch(function (err) { console.log(`there's an error ${err}`) });
   }
 
   process() {
@@ -43,11 +43,11 @@ class Audio {
       // audio.analyser = null;
       // Might need to disconnect the other analysers.
       return;
-    } 
+    }
 
     this.analyser.getByteTimeDomainData(this.dataArr);
 
-    console.log(this.dataArr);
+    // console.log(this.dataArr);
     return this.dataArr;
   }
 }
@@ -70,16 +70,21 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   container.appendChild(renderer.domElement);
 
-  var geometry = new THREE.BoxGeometry(5, 5, 5);
-  var uniforms = {
-    uTime: { type: 'f', value: 1.0 },
-    tAudioData: {value: new THREE.DataTexture( audio.dataArr, audio.fftSize / 2, 1, THREE.LuminanceFormat ) }
-  };
-  var material = new THREE.ShaderMaterial({
-    uniforms: uniforms,
-    vertexShader: document.getElementById('vertex-shader').textContent,
-    fragmentShader: document.getElementById('fragment-shader').textContent
+  var geometry = new THREE.BoxGeometry(2, 2, 2);
+  // var uniforms = {
+  //   uTime: { type: 'f', value: 1.0 },
+  //   tAudioData: { type: 't', value: getTexture() }
+  // };
+  // var material = new THREE.ShaderMaterial({
+  //   uniforms: uniforms,
+  //   vertexShader: document.getElementById('vertex-shader').textContent,
+  //   fragmentShader: document.getElementById('fragment-shader').textContent
+  // });
+  var material = new THREE.MeshBasicMaterial({
+    map: getTexture(),
+    needsUpdate: true
   });
+
   var cube = new THREE.Mesh(geometry, material);
   scene.add(cube);
 
@@ -88,17 +93,39 @@ function init() {
   var animate = function () {
 
     requestAnimationFrame(animate);
-    audio.process();
+    // audio.process();
 
     cube.rotation.x += 0.001;
     cube.rotation.y += 0.01;
     var elapsedMs = Date.now() - startTime;
     var elapsedSeconds = elapsedMs / 1000.0;
     // uniforms.uTime.value = 60.0 * elapsedSeconds;
-    uniforms.uTime.value = 12.0;
+    // uniforms.uTime.value = 12.0;
+
+    material.map = getTexture(audio.process());
 
     renderer.render(scene, camera);
   };
 
   animate();
+}
+
+function getTexture(audioData) {
+  const width = 6;
+  const height = 6;
+  let size = audioData && audioData.length > 0 ? audioData.length : 3 * width * height;
+  let data = new Uint8Array(size);
+
+  for (let i = 0; i < size; i++) {
+    let stride = i * 3;
+    let x = audioData ? audioData[i] : 255;
+
+    data[stride] = Math.floor(Math.random() * x);
+    data[stride + 1] = Math.floor(Math.random() * x);
+    data[stride + 2] = Math.floor(Math.random() * x);
+  }
+
+  let texture = new THREE.DataTexture(data, width, height, THREE.RGBFormat);
+  texture.needsUpdate = true;
+  return texture;
 }
